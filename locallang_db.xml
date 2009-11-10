@@ -12,16 +12,16 @@
 			<label index="tt_news.tx_pmkttnewstwitter_notwitter">Don't post on Twitter</label>
 		</languageKey>
 		<languageKey index="dk" type="array">
-			<label index="tt_news.tx_pmkttnewstwitter_notwitter">Post ikke pås Twitter</label>
+			<label index="tt_news.tx_pmkttnewstwitter_notwitter">Post ikke på Twitter</label>
 		</languageKey>
 		<languageKey index="de"></languageKey>
-		<languageKey index="no"></languageKey>
+		<languageKey index="no" type="array">
+			<label index="tt_news.tx_pmkttnewstwitter_notwitter">Ikke legg på Twitter</label>
+		</languageKey>
 		<languageKey index="it"></languageKey>
 		<languageKey index="fr"></languageKey>
 		<languageKey index="es"></languageKey>
-		<languageKey index="nl" type="array">
-			<label index="tt_news.tx_pmkttnewstwitter_notwitter">Ikke legg på Twitter</label>
-		</languageKey>
+		<languageKey index="nl"></languageKey>
 		<languageKey index="cz"></languageKey>
 		<languageKey index="pl"></languageKey>
 		<languageKey index="si"></languageKey>
