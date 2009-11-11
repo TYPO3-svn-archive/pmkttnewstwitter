@@ -127,12 +127,12 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			if ($this->ttnewsConf['useSPidFromCategory'] && is_array($this->ttnewsCat)) {
 				$catSPid = $this->ttnewsCat;
 			}
-			$singlePid = $catSPid['single_pid'] ? $catSPid['single_pid'] : $this->ttnewsConf['singlePid'];
-			$parameters = array(
-				'tx_ttnews' => array(
-					'tt_news' => $this->uid,
-					'backPid' => ($this->ttnewsConf['dontUseBackPid'] ? null : $this->ttnewsConf['backPid'])
-				));
+			$singlePid = $catSPid['single_pid'] ? intval($catSPid['single_pid']) : intval($this->ttnewsConf['singlePid']);
+			if (!$singlePid) return '';
+			$parameters['tx_ttnews']['tt_news'] = $this->uid;
+			if (!$this->ttnewsConf['dontUseBackPid'] && $this->ttnewsConf['backPid']) {
+				$parameters['tx_ttnews']['backPid'] = $this->ttnewsConf['backPid'];
+			}
 			$pagepath = tx_pagepath_api::getPagePath($singlePid, $parameters);
 			return $pagepath;
 		}
@@ -201,7 +201,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			$conf = $PageTSconfig['tx_pmkttnewstwitter.'];
 			$conf['twitterUser'] = htmlspecialchars($conf['twitterUser']);
 			$conf['twitterPassword'] = htmlspecialchars($conf['twitterPassword']);
-			$conf['postField'] = $conf['postField'] ? $conf['postField'] : 'bodytext';
+			$conf['postField'] = $conf['postField'] ? $conf['postField'] : 'title';
 			$conf['linkBack'] = intval($conf['linkBack']);
 			return $conf;
 		}
