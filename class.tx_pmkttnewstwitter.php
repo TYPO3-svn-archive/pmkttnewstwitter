@@ -198,7 +198,6 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 		 */
 		function getConfig($pageId) {
 			$PageTSconfig = t3lib_BEfunc::getPagesTSconfig($pageId);
-			debug($PageTSconfig,'PageTSconfig');
 			$conf = $PageTSconfig['tx_pmkttnewstwitter.'];
 			$conf['twitterUser'] = htmlspecialchars($conf['twitterUser']);
 			$conf['twitterPassword'] = htmlspecialchars($conf['twitterPassword']);
