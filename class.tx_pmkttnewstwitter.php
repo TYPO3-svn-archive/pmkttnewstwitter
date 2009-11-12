@@ -29,12 +29,12 @@
  *
  *   55: class tx_pmkttnewstwitter
  *   67:     function processDatamap_afterDatabaseOperations($status, $table, $id, &$fieldArray, &$reference)
- *  100:     function twit($twitter_data)
- *  125:     function makeSingleLink()
- *  147:     function init_tmpl($pageId,$template_uid=0)
+ *  101:     function twit($twitter_data)
+ *  126:     function makeSingleLink()
+ *  148:     function init_tmpl($pageId,$template_uid=0)
  *  167:     function getNewsCategory($uid)
  *  188:     function createTinyUrl($longURL)
- *  199:     function getConfig($pageId)
+ *  202:     function getConfig($pageId)
  *
  * TOTAL FUNCTIONS: 7
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -75,10 +75,11 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			// Return if twitter username or password is missing
 			if ($this->conf['twitterUser'] == '' || $this->conf['twitterPassword'] == '') return;
 			if (isset($fieldArray[$this->conf['postField']])) {
+				$this->reference = $reference;
+				$this->uid = ($status == 'new') ?$reference->substNEWwithIDs[$id] : $id;
+				$this->status = ($status == 'new') ? 1 : 2;
 				$singleUrl = '';
 				if ($this->conf['linkBack']) {
-					$this->uid = ($status == 'new') ?$reference->substNEWwithIDs[$id] : $id;
-					$this->status = ($status == 'new') ? 1 : 2;
 					$this->tmpl = $this->init_tmpl($reference->checkValue_currentRecord['pid'],0);
 					$this->ttnewsConf = $this->tmpl->setup['plugin.']['tt_news.'];
 					$this->ttnewsCat = $this->getNewsCategory($this->uid);
@@ -86,14 +87,13 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 				}
 				$singleUrlLen = strlen($singleUrl);
 				$msg = htmlspecialchars(strip_tags($fieldArray[$this->conf['postField']]));
-				$msg = (strlen($msg)+$singleUrlLen > 136) ? substr($msg, 0, 136-$singleUrlLen).'...': $msg;
-				$this->reference = $reference;
+				$msg = (strlen($msg)+$singleUrlLen > 137) ? substr($msg, 0, 137-$singleUrlLen).'...': $msg;
 				$this->twit($msg.$singleUrl);
 			}
 		}
 
 		/**
-		 * Post data on Twitter
+		 * Post data on Twitter using Curl.
 		 *
 		 * @param	string		$twitter_data: Data to post on twitter.
 		 * @return	void
@@ -124,7 +124,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 		 * @return	string		typolink pointing to singleview page.
 		 */
 		function makeSingleLink() {
-			//  Overwrite the singlePid from config-array with a singlePid given from the first entry in $this->categories
+			//  Overwrite the singlePid from config-array with a singlePid given from $this->ttnewsCat
 			if ($this->ttnewsConf['useSPidFromCategory'] && is_array($this->ttnewsCat)) {
 				$catSPid = $this->ttnewsCat;
 			}
@@ -146,7 +146,6 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 		 * @return	array		$tmpl: TMPL object.
 		 */
 		function init_tmpl($pageId,$template_uid=0)	{
-			//global $tmpl;
 			$tmpl = t3lib_div::makeInstance("t3lib_tsparser_ext");	// Defined global here!
 			$tmpl->tt_track = 0;	// Do not log time-performance information
 			$tmpl->init();
@@ -188,7 +187,10 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 		 */
 		function createTinyUrl($longURL) {
 			$tinyURL = @file_get_contents("http://tinyurl.com/api-create.php?url=".$longURL);
-			return $tinyURL ? $tinyURL : $longURL;
+			$tinyURL = $tinyURL ? $tinyURL : $longURL;
+			// Replace "http://www." with "www.", saving extra 7 bytes/chars.
+			$tinyURL = preg_replace('%^((http://)(www\.))%', '$3', $tinyURL);
+			return $tinyURL;
 		}
 
 		/**
