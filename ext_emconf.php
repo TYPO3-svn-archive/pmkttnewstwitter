@@ -3,7 +3,7 @@
 ########################################################################
 # Extension Manager/Repository config file for ext: "pmkttnewstwitter"
 #
-# Auto generated 11-11-2009 21:00
+# Auto generated 12-11-2009 14:25
 #
 # Manual updates:
 # Only the data in the array - anything else is removed by next write.
@@ -25,13 +25,15 @@ $EM_CONF[$_EXTKEY] = array(
 	'internal' => '',
 	'uploadfolder' => 0,
 	'createDirs' => '',
-	'modify_tables' => 'tt_news,pagepath',
+	'modify_tables' => 'tt_news',
 	'clearCacheOnLoad' => 0,
 	'lockType' => '',
 	'author_company' => '',
 	'version' => '0.1.0',
 	'constraints' => array(
 		'depends' => array(
+			'typo3' => '4.2.0-4.99.99',
+			'php' => '5.2.0-10.0.0',
 			'tt_news' => '2.5.0-0.0.0',
 			'pagepath' => '0.1.4-0.0.0',
 		),

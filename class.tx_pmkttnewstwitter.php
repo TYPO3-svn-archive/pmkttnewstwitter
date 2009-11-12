@@ -87,6 +87,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 				$singleUrlLen = strlen($singleUrl);
 				$msg = htmlspecialchars(strip_tags($fieldArray[$this->conf['postField']]));
 				$msg = (strlen($msg)+$singleUrlLen > 136) ? substr($msg, 0, 136-$singleUrlLen).'...': $msg;
+				$this->reference = $reference;
 				$this->twit($msg.$singleUrl);
 			}
 		}
@@ -112,7 +113,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			$httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 			curl_close($ch);
 			if ($httpcode != 200) {
-				$reference->log('tt_news', $this->uid, $this->status, 0, 1, "pmkttnewstwitter: Something went wrong, and the tweet wasn't posted correctly.");
+				$this->reference->log('tt_news', $this->uid, $this->status, 0, 1, "pmkttnewstwitter: Errorcode: ".$httpcode." Something went wrong, and the tweet wasn't posted correctly.");
 			}
 		}
 
@@ -199,8 +200,8 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 		function getConfig($pageId) {
 			$PageTSconfig = t3lib_BEfunc::getPagesTSconfig($pageId);
 			$conf = $PageTSconfig['tx_pmkttnewstwitter.'];
-			$conf['twitterUser'] = htmlspecialchars($conf['twitterUser']);
-			$conf['twitterPassword'] = htmlspecialchars($conf['twitterPassword']);
+			$conf['twitterUser'] = $conf['twitterUser'];
+			$conf['twitterPassword'] = $conf['twitterPassword'];
 			$conf['postField'] = $conf['postField'] ? $conf['postField'] : 'title';
 			$conf['linkBack'] = intval($conf['linkBack']);
 			return $conf;
