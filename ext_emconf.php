@@ -12,7 +12,7 @@
 
 $EM_CONF[$_EXTKEY] = array(
 	'title' => 'PMK News Twitter',
-	'description' => 'Adds Twitter entry when a tt_news record is created or edited. Optional link back to singleView page can be added to Twitter post.',
+	'description' => 'Adds Twitter entry when a tt_news record is created or edited. Optional link back to tt_news singleView page can be added to Twitter post.',
 	'category' => 'be',
 	'author' => 'Peter Klein',
 	'author_email' => 'pmk@io.dk',
@@ -29,7 +29,7 @@ $EM_CONF[$_EXTKEY] = array(
 	'clearCacheOnLoad' => 0,
 	'lockType' => '',
 	'author_company' => '',
-	'version' => '0.1.1',
+	'version' => '0.1.2',
 	'constraints' => array(
 		'depends' => array(
 			'typo3' => '4.2.0-4.99.99',

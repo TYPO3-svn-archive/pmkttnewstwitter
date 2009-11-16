@@ -23,23 +23,23 @@
 	***************************************************************/
 
 	/**
- * [CLASS/FUNCTION INDEX of SCRIPT]
- *
- *
- *
- *   55: class tx_pmkttnewstwitter
- *   67:     function processDatamap_afterDatabaseOperations($status, $table, $id, &$fieldArray, &$reference)
- *  101:     function twit($twitter_data)
- *  126:     function makeSingleLink()
- *  148:     function init_tmpl($pageId,$template_uid=0)
- *  167:     function getNewsCategory($uid)
- *  188:     function createTinyUrl($longURL)
- *  202:     function getConfig($pageId)
- *
- * TOTAL FUNCTIONS: 7
- * (This index is automatically created/updated by the extension "extdeveval")
- *
- */
+	 * [CLASS/FUNCTION INDEX of SCRIPT]
+	 *
+	 *
+	 *
+	 *   55: class tx_pmkttnewstwitter
+	 *   67:     function processDatamap_afterDatabaseOperations($status, $table, $id, &$fieldArray, &$reference)
+	 *  101:     function twit($twitter_data)
+	 *  126:     function makeSingleLink()
+	 *  148:     function init_tmpl($pageId,$template_uid=0)
+	 *  167:     function getNewsCategory($uid)
+	 *  190:     function createShortUrl($longURL,$login='',$apiKey='')
+	 *  220:     function getConfig($pageId)
+	 *
+	 * TOTAL FUNCTIONS: 7
+	 * (This index is automatically created/updated by the extension "extdeveval")
+	 *
+	 */
 
 /* Classes required for creating a tmpl object */
 require_once(PATH_t3lib."class.t3lib_extobjbase.php");
@@ -83,7 +83,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 					$this->tmpl = $this->init_tmpl($reference->checkValue_currentRecord['pid'],0);
 					$this->ttnewsConf = $this->tmpl->setup['plugin.']['tt_news.'];
 					$this->ttnewsCat = $this->getNewsCategory($this->uid);
-					$singleUrl = ' '.$this->createTinyUrl($this->makeSingleLink());
+					$singleUrl = ' '.$this->createShortUrl($this->makeSingleLink(),$this->conf['bitlyLogin'],$this->conf['bitlyApiKey']);
 				}
 				$singleUrlLen = strlen($singleUrl);
 				$msg = htmlspecialchars(strip_tags($fieldArray[$this->conf['postField']]));
@@ -146,7 +146,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 		 * @return	array		$tmpl: TMPL object.
 		 */
 		function init_tmpl($pageId,$template_uid=0)	{
-			$tmpl = t3lib_div::makeInstance("t3lib_tsparser_ext");	// Defined global here!
+			$tmpl = t3lib_div::makeInstance("t3lib_tsparser_ext");
 			$tmpl->tt_track = 0;	// Do not log time-performance information
 			$tmpl->init();
 			// Gets the rootLine
@@ -180,17 +180,35 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 		}
 
 		/**
-		 * Shorten long url by converting it using the tinyurl.com API
+		 * Shorten long url by converting it using tinyurl.com or bit.ly API
 		 *
 		 * @param	string		$longURL: Long URL.
-		 * @return	string		tinyurl version of long URL.
+		 * @param	string		$login: Optional bit.ly login.
+		 * @param	string		$apiKey: Optional bit.ly API key.
+		 * @return	string		Short version of long URL.
 		 */
-		function createTinyUrl($longURL) {
-			$tinyURL = @file_get_contents("http://tinyurl.com/api-create.php?url=".$longURL);
-			$tinyURL = $tinyURL ? $tinyURL : $longURL;
+		function createShortUrl($longURL,$login='',$apiKey='') {
+			// tinyurl.com
+			$url = 'http://tinyurl.com/api-create.php?url='.$longURL;
+			// Bit.ly
+			if ($login!='' && $apiKey!='') {
+				$url = 'http://api.bit.ly/shorten?version=2.0.1&longUrl='.urlencode($longURL).'&login='.$login.'&apiKey='.$apiKey.'&format=json&history=1';
+			}
+			$ch = curl_init();
+			curl_setopt($ch,CURLOPT_URL, $url);
+			curl_setopt($ch,CURLOPT_HEADER,false);
+			curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
+			$shortURL = @curl_exec($ch);
+			curl_close($ch);
+			// Bit.ly
+			if ($login!='' && $apiKey!='') {
+				$obj = json_decode($shortURL, true);
+				$shortURL = ($obj['statusCode'] =='OK') ? $obj['results'][$longURL]['shortUrl'] : '';
+			}
+			$shortURL = $shortURL ? $shortURL : $longURL;
 			// Replace "http://www." with "www.", saving extra 7 bytes/chars.
-			$tinyURL = preg_replace('%^((http://)(www\.))%', '$3', $tinyURL);
-			return $tinyURL;
+			$shortURL = preg_replace('%^((http://)(www\.))%', '$3', $shortURL);
+			return $shortURL;
 		}
 
 		/**
@@ -202,10 +220,12 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 		function getConfig($pageId) {
 			$PageTSconfig = t3lib_BEfunc::getPagesTSconfig($pageId);
 			$conf = $PageTSconfig['tx_pmkttnewstwitter.'];
-			$conf['twitterUser'] = $conf['twitterUser'];
-			$conf['twitterPassword'] = $conf['twitterPassword'];
-			$conf['postField'] = $conf['postField'] ? $conf['postField'] : 'title';
+			$conf['twitterUser'] = trim($conf['twitterUser']);
+			$conf['twitterPassword'] = trim($conf['twitterPassword']);
+			$conf['postField'] = $conf['postField'] ? trim($conf['postField']) : 'title';
 			$conf['linkBack'] = intval($conf['linkBack']);
+			$conf['bitlyLogin'] = trim($conf['bitlyLogin']);
+			$conf['bitlyApiKey'] = trim($conf['bitlyApiKey']);
 			return $conf;
 		}
 
