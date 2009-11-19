@@ -12,8 +12,10 @@ $tempColumns = array (
 	),
 );
 
-
 t3lib_div::loadTCA('tt_news');
 t3lib_extMgm::addTCAcolumns('tt_news',$tempColumns,1);
 t3lib_extMgm::addToAllTCAtypes('tt_news','tx_pmkttnewstwitter_notwitter;;;;1-1-1','','after:type');
+// initalize "context sensitive help" (csh)
+t3lib_extMgm::addLLrefForTCAdescr('tt_news','EXT:pmkttnewstwitter/locallang_csh.php');
+
 ?>
