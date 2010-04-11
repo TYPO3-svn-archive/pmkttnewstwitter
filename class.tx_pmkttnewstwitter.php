@@ -46,8 +46,6 @@ require_once(PATH_t3lib."class.t3lib_extobjbase.php");
 require_once(PATH_t3lib."class.t3lib_tsparser_ext.php");
 require_once(PATH_t3lib."class.t3lib_page.php");
 
-require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
-
 	/**
 	 * Class for posting tt_news entries on twitter.
 	 *
@@ -72,6 +70,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			if ($fieldArray['tx_pmkttnewstwitter_notwitter'] || (!isset($fieldArray['tx_pmkttnewstwitter_notwitter']) && $reference->checkValue_currentRecord['tx_pmkttnewstwitter_notwitter'])) return;
 			// Get config options.
 			$this->conf = $this->getConfig($reference->checkValue_currentRecord['pid']);
+
 			// Return if twitter username or password is missing
 			if ($this->conf['twitterUser'] == '' || $this->conf['twitterPassword'] == '') return;
 			if (isset($fieldArray[$this->conf['postField']])) {
@@ -86,7 +85,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 					$singleUrl = ' '.$this->createShortUrl($this->makeSingleLink(),$this->conf['bitlyLogin'],$this->conf['bitlyApiKey']);
 				}
 				$singleUrlLen = strlen($singleUrl);
-				$msg = htmlspecialchars(strip_tags($fieldArray[$this->conf['postField']]));
+				$msg = htmlspecialchars(strip_tags($fieldArray[$this->conf['postField']]), ENT_NOQUOTES);
 				$msg = (strlen($msg)+$singleUrlLen > 137) ? substr($msg, 0, 137-$singleUrlLen).'...': $msg;
 				$this->twit($msg.$singleUrl);
 			}
@@ -105,7 +104,8 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			$ch = curl_init($twitter_api_url);
 			curl_setopt($ch, CURLOPT_POST, 1);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, 'status='.$twitter_data);
-			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
+			//curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 			curl_setopt($ch, CURLOPT_HEADER, 0);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 			curl_setopt($ch, CURLOPT_USERPWD, "{$twitter_user}:{$twitter_password}");
@@ -134,8 +134,23 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			if (!$this->ttnewsConf['dontUseBackPid'] && $this->ttnewsConf['backPid']) {
 				$parameters['tx_ttnews']['backPid'] = $this->ttnewsConf['backPid'];
 			}
-			$pagepath = tx_pagepath_api::getPagePath($singlePid, $parameters);
-			return $pagepath;
+
+			// Include PagePath API if available:
+			if (t3lib_extMgm::isLoaded('pagepath') && !$this->conf['noPagePath']) {
+				require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
+				$url = tx_pagepath_api::getPagePath($singlePid, $parameters);
+			}
+			else {
+				$url = 'index.php?id='.$singlePid.'&'.http_build_query($parameters, '', '&');
+				if ($this->domain) {
+					$url = 'http://'.$this->domain.'/'.$url;
+				}
+				else {
+					$url = t3lib_div::getIndpEnv( 'TYPO3_SITE_URL' ).$url;
+				}
+			}
+
+			return $url;
 		}
 
 		/**
@@ -152,6 +167,8 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			// Gets the rootLine
 			$sys_page = t3lib_div::makeInstance("t3lib_pageSelect");
 			$rootLine = $sys_page->getRootLine($pageId);
+			// Pickup the domain record while we have a rootline.
+			$this->domain =	t3lib_BEfunc::firstDomainRecord($rootLine);
 			// This generates the constants/config + hierarchy info for the template.
 			$tmpl->runThroughTemplates($rootLine,$template_uid);
 			$tmpl->generateConfig();
@@ -224,6 +241,7 @@ require_once(t3lib_extMgm::extPath('pagepath').'class.tx_pagepath_api.php');
 			$conf['twitterPassword'] = trim($conf['twitterPassword']);
 			$conf['postField'] = $conf['postField'] ? trim($conf['postField']) : 'title';
 			$conf['linkBack'] = intval($conf['linkBack']);
+			$conf['noPagePath'] = $conf['noPagePath'] ? 1 : 0;
 			$conf['bitlyLogin'] = trim($conf['bitlyLogin']);
 			$conf['bitlyApiKey'] = trim($conf['bitlyApiKey']);
 			return $conf;

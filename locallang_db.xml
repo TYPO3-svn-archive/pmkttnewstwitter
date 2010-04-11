@@ -14,7 +14,9 @@
 		<languageKey index="dk" type="array">
 			<label index="tt_news.tx_pmkttnewstwitter_notwitter">Post ikke på Twitter:</label>
 		</languageKey>
-		<languageKey index="de"></languageKey>
+		<languageKey index="de">
+      		<label index="tt_news.tx_pmkttnewstwitter_notwitter">Nicht an Twitter weiterleiten:</label>
+		</languageKey>
 		<languageKey index="no" type="array">
 			<label index="tt_news.tx_pmkttnewstwitter_notwitter">Ikke legg på Twitter:</label>
 		</languageKey>
