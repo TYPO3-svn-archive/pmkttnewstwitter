@@ -27,16 +27,17 @@
 	 *
 	 *
 	 *
-	 *   55: class tx_pmkttnewstwitter
-	 *   67:     function processDatamap_afterDatabaseOperations($status, $table, $id, &$fieldArray, &$reference)
-	 *  101:     function twit($twitter_data)
-	 *  126:     function makeSingleLink()
-	 *  148:     function init_tmpl($pageId,$template_uid=0)
-	 *  167:     function getNewsCategory($uid)
-	 *  190:     function createShortUrl($longURL,$login='',$apiKey='')
-	 *  220:     function getConfig($pageId)
+	 *   54: class tx_pmkttnewstwitter
+	 *   66:     function processDatamap_afterDatabaseOperations($status, $table, $id, &$fieldArray, &$reference)
+	 *  107:     function twit($twitter_data)
+	 *  134:     function makeSingleLink()
+	 *  171:     function init_tmpl($pageId,$template_uid=0)
+	 *  192:     function getNewsCategory($uid)
+	 *  215:     function createShortUrl($longURL,$login='',$apiKey='')
+	 *  245:     function getConfig($pageId)
+	 *  264:     function isUTF8($str)
 	 *
-	 * TOTAL FUNCTIONS: 7
+	 * TOTAL FUNCTIONS: 8
 	 * (This index is automatically created/updated by the extension "extdeveval")
 	 *
 	 */
@@ -85,7 +86,13 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 					$singleUrl = ' '.$this->createShortUrl($this->makeSingleLink(),$this->conf['bitlyLogin'],$this->conf['bitlyApiKey']);
 				}
 				$singleUrlLen = strlen($singleUrl);
-				$msg = htmlspecialchars(strip_tags($fieldArray[$this->conf['postField']]), ENT_NOQUOTES);
+				//$msg = htmlspecialchars(strip_tags($fieldArray[$this->conf['postField']]), ENT_NOQUOTES);
+				$msg = htmlspecialchars_decode(strip_tags($fieldArray[$this->conf['postField']]),ENT_QUOTES);
+				// Translate chars that the Twitter API doesn't like. (<,> and &)
+				//debug($reference->checkValue_currentRecord['sys_language_uid']);
+				$andLabel = $GLOBALS['LANG']->getLLL('tx_pmkttnewstwitter_and',$GLOBALS['LANG']->readLLfile(t3lib_extMgm::extPath('pmkttnewstwitter').'locallang_db.xml'));
+				$msg = str_replace(array('<','>','&'), array(' ',' ',' '.$andLabel.' '), $msg);
+				$msg = $this->isUTF8($msg) ? $msg : utf8_encode($msg);
 				$msg = (strlen($msg)+$singleUrlLen > 137) ? substr($msg, 0, 137-$singleUrlLen).'...': $msg;
 				$this->twit($msg.$singleUrl);
 			}
@@ -107,6 +114,7 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
 			//curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 			curl_setopt($ch, CURLOPT_HEADER, 0);
+			curl_setopt($ch, CURLOPT_TRANSFERTEXT, 1);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 			curl_setopt($ch, CURLOPT_USERPWD, "{$twitter_user}:{$twitter_password}");
 			$twitter_data = curl_exec($ch);
@@ -245,6 +253,16 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 			$conf['bitlyLogin'] = trim($conf['bitlyLogin']);
 			$conf['bitlyApiKey'] = trim($conf['bitlyApiKey']);
 			return $conf;
+		}
+
+		/**
+		 * Check if string is in UTF-8 format
+		 *
+		 * @param	array	string to check
+		 * @return	boolean	true if string is valid utf-8
+		 */
+		function isUTF8($str) {
+			return preg_match('/\A(?:([\09\0A\0D\x20-\x7E]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*)\Z/x', $str);
 		}
 
 	}
