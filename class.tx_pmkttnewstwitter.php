@@ -29,13 +29,13 @@
 	 *
 	 *   54: class tx_pmkttnewstwitter
 	 *   66:     function processDatamap_afterDatabaseOperations($status, $table, $id, &$fieldArray, &$reference)
-	 *  107:     function twit($twitter_data)
-	 *  134:     function makeSingleLink()
-	 *  171:     function init_tmpl($pageId,$template_uid=0)
-	 *  192:     function getNewsCategory($uid)
-	 *  215:     function createShortUrl($longURL,$login='',$apiKey='')
-	 *  245:     function getConfig($pageId)
-	 *  264:     function isUTF8($str)
+	 *  123:     function twit($twitter_data)
+	 *  150:     function makeSingleLink()
+	 *  187:     function init_tmpl($pageId,$template_uid=0)
+	 *  208:     function getNewsCategory($uid)
+	 *  231:     function createShortUrl($longURL,$login='',$apiKey='')
+	 *  261:     function getConfig($pageId)
+	 *  281:     function isUTF8($str)
 	 *
 	 * TOTAL FUNCTIONS: 8
 	 * (This index is automatically created/updated by the extension "extdeveval")
@@ -94,6 +94,22 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 				$msg = str_replace(array('<','>','&'), array(' ',' ',' '.$andLabel.' '), $msg);
 				$msg = $this->isUTF8($msg) ? $msg : utf8_encode($msg);
 				$msg = (strlen($msg)+$singleUrlLen > 137) ? substr($msg, 0, 137-$singleUrlLen).'...': $msg;
+
+				if ($this->conf['useKeywordsAsHashTags']) {
+					$keywords = $fieldArray['keywords'] ? $fieldArray['keywords'] : $reference->checkValue_currentRecord['keywords'];
+					if ($keywords) {
+						$keywords = $this->isUTF8($keywords) ? $keywords : utf8_encode($keywords);
+						$keywords = t3lib_div::trimExplode(',', $keywords, 1);
+						foreach ($keywords as $keyword) {
+							if (strlen($msg)+strlen(' #'.$keyword)+$singleUrlLen > 137) {
+								break;
+							}
+							else {
+								$msg.=' #'.$keyword;
+							}
+						}
+					}
+				}
 				$this->twit($msg.$singleUrl);
 			}
 		}
@@ -249,6 +265,7 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 			$conf['twitterPassword'] = trim($conf['twitterPassword']);
 			$conf['postField'] = $conf['postField'] ? trim($conf['postField']) : 'title';
 			$conf['linkBack'] = intval($conf['linkBack']);
+			$conf['useKeywordsAsHashTags'] = $conf['useKeywordsAsHashTags'] ? 1 : 0;
 			$conf['noPagePath'] = $conf['noPagePath'] ? 1 : 0;
 			$conf['bitlyLogin'] = trim($conf['bitlyLogin']);
 			$conf['bitlyApiKey'] = trim($conf['bitlyApiKey']);
