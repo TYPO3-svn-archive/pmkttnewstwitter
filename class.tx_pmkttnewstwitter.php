@@ -29,13 +29,13 @@
 	 *
 	 *   54: class tx_pmkttnewstwitter
 	 *   66:     function processDatamap_afterDatabaseOperations($status, $table, $id, &$fieldArray, &$reference)
-	 *  123:     function twit($twitter_data)
-	 *  150:     function makeSingleLink()
-	 *  187:     function init_tmpl($pageId,$template_uid=0)
-	 *  208:     function getNewsCategory($uid)
-	 *  231:     function createShortUrl($longURL,$login='',$apiKey='')
-	 *  261:     function getConfig($pageId)
-	 *  281:     function isUTF8($str)
+	 *  125:     function twit($twitter_data)
+	 *  152:     function makeSingleLink()
+	 *  190:     function init_tmpl($pageId,$template_uid=0)
+	 *  210:     function getNewsCategory($uid)
+	 *  233:     function createShortUrl($longURL,$login='',$apiKey='')
+	 *  263:     function getConfig($pageId)
+	 *  283:     function isUTF8($str)
 	 *
 	 * TOTAL FUNCTIONS: 8
 	 * (This index is automatically created/updated by the extension "extdeveval")
@@ -69,6 +69,8 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 			if ($table != 'tt_news' || !($status == 'new' || $status == 'update')) return;
 			// Return if "tx_pmkttnewstwitter_notwitter" field is enabled
 			if ($fieldArray['tx_pmkttnewstwitter_notwitter'] || (!isset($fieldArray['tx_pmkttnewstwitter_notwitter']) && $reference->checkValue_currentRecord['tx_pmkttnewstwitter_notwitter'])) return;
+			// Return if "hidden" field is enabled
+			if ($fieldArray['hidden'] || (!isset($fieldArray['hidden']) && $reference->checkValue_currentRecord['hidden'])) return;
 			// Get config options.
 			$this->conf = $this->getConfig($reference->checkValue_currentRecord['pid']);
 

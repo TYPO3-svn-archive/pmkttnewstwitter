@@ -3,7 +3,7 @@
 ########################################################################
 # Extension Manager/Repository config file for ext "pmkttnewstwitter".
 #
-# Auto generated 11-04-2010 13:03
+# Auto generated 16-05-2010 19:17
 #
 # Manual updates:
 # Only the data in the array - everything else is removed by next
@@ -15,13 +15,13 @@ $EM_CONF[$_EXTKEY] = array(
 	'description' => 'Adds Twitter entry when a tt_news record is created or edited. Optional link back to tt_news singleView page can be added to Twitter post.',
 	'category' => 'be',
 	'shy' => 0,
-	'version' => '0.2.1',
+	'version' => '0.2.3',
 	'dependencies' => 'tt_news',
 	'conflicts' => '',
 	'priority' => '',
 	'loadOrder' => '',
 	'module' => '',
-	'state' => 'beta',
+	'state' => 'stable',
 	'uploadfolder' => 0,
 	'createDirs' => '',
 	'modify_tables' => 'tt_news',
@@ -44,7 +44,7 @@ $EM_CONF[$_EXTKEY] = array(
 			'pagepath' => '0.1.4-0.0.0',
 		),
 	),
-	'_md5_values_when_last_written' => 'a:11:{s:9:"ChangeLog";s:4:"de31";s:10:"README.txt";s:4:"ee2d";s:29:"class.tx_pmkttnewstwitter.php";s:4:"f1e4";s:12:"ext_icon.gif";s:4:"d447";s:17:"ext_localconf.php";s:4:"4372";s:15:"ext_php_api.dat";s:4:"bd83";s:14:"ext_tables.php";s:4:"4f01";s:14:"ext_tables.sql";s:4:"e3d0";s:17:"locallang_csh.xml";s:4:"d6d6";s:16:"locallang_db.xml";s:4:"9e31";s:14:"doc/manual.sxw";s:4:"5edc";}',
+	'_md5_values_when_last_written' => 'a:11:{s:9:"ChangeLog";s:4:"de31";s:10:"README.txt";s:4:"ee2d";s:29:"class.tx_pmkttnewstwitter.php";s:4:"3c9e";s:12:"ext_icon.gif";s:4:"d447";s:17:"ext_localconf.php";s:4:"4372";s:15:"ext_php_api.dat";s:4:"bd83";s:14:"ext_tables.php";s:4:"43f2";s:14:"ext_tables.sql";s:4:"e3d0";s:17:"locallang_csh.xml";s:4:"d6d6";s:16:"locallang_db.xml";s:4:"91f7";s:14:"doc/manual.sxw";s:4:"e200";}',
 	'suggests' => array(
 	),
 );

@@ -4,7 +4,7 @@ if (!defined ('TYPO3_MODE')) {
 }
 $tempColumns = array (
 	'tx_pmkttnewstwitter_notwitter' => array (		
-		'exclude' => 0,		
+		'exclude' => 1,		
 		'label' => 'LLL:EXT:pmkttnewstwitter/locallang_db.xml:tt_news.tx_pmkttnewstwitter_notwitter',		
 		'config' => array (
 			'type' => 'check',
