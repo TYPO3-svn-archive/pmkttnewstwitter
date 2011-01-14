@@ -47,6 +47,8 @@ require_once(PATH_t3lib."class.t3lib_extobjbase.php");
 require_once(PATH_t3lib."class.t3lib_tsparser_ext.php");
 require_once(PATH_t3lib."class.t3lib_page.php");
 
+require_once dirname(__FILE__) . '/res/twitteroauth.php';
+
 	/**
 	 * Class for posting tt_news entries on twitter.
 	 *
@@ -73,29 +75,49 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 			if ($fieldArray['hidden'] || (!isset($fieldArray['hidden']) && $reference->checkValue_currentRecord['hidden'])) return;
 			// Get config options.
 			$this->conf = $this->getConfig($reference->checkValue_currentRecord['pid']);
-
+			
 			// Return if twitter username or password is missing
 			if ($this->conf['twitterUser'] == '' || $this->conf['twitterPassword'] == '') return;
-			if (isset($fieldArray[$this->conf['postField']])) {
+			
+			$fieldsInArray = false;
+			$fields = explode(', ', $this->conf['postField']);
+			foreach($fields as $field) {
+				if (isset($fieldArray[$field])) {
+					$fieldsInArray = true;
+					break;
+				}
+			}
+			
+			$this->uid = ($status == 'new') ?$reference->substNEWwithIDs[$id] : $id;
+			if ($fieldsInArray) {
 				$this->reference = $reference;
-				$this->uid = ($status == 'new') ?$reference->substNEWwithIDs[$id] : $id;
 				$this->status = ($status == 'new') ? 1 : 2;
 				$singleUrl = '';
+
 				if ($this->conf['linkBack']) {
 					$this->tmpl = $this->init_tmpl($reference->checkValue_currentRecord['pid'],0);
 					$this->ttnewsConf = $this->tmpl->setup['plugin.']['tt_news.'];
 					$this->ttnewsCat = $this->getNewsCategory($this->uid);
 					$singleUrl = ' '.$this->createShortUrl($this->makeSingleLink(),$this->conf['bitlyLogin'],$this->conf['bitlyApiKey']);
 				}
+
 				$singleUrlLen = strlen($singleUrl);
-				//$msg = htmlspecialchars(strip_tags($fieldArray[$this->conf['postField']]), ENT_NOQUOTES);
-				$msg = htmlspecialchars_decode(strip_tags($fieldArray[$this->conf['postField']]),ENT_QUOTES);
+				$postFields = t3lib_div::trimExplode(',', $this->conf['postField']);
+				$msg = '';
+				$actualFields = $reference->datamap[$table][$id];
+				foreach ($postFields as $postField) {
+					$msg .= htmlspecialchars_decode(strip_tags($actualFields[$postField]),ENT_QUOTES);
+					if ($postField == 'title') $msg .= ': ';
+				}
+				$msg = preg_replace('/\s\s+/', ' ', $msg);
 				// Translate chars that the Twitter API doesn't like. (<,> and &)
 				//debug($reference->checkValue_currentRecord['sys_language_uid']);
-				$andLabel = $GLOBALS['LANG']->getLLL('tx_pmkttnewstwitter_and',$GLOBALS['LANG']->readLLfile(t3lib_extMgm::extPath('pmkttnewstwitter').'locallang_db.xml'));
+				// $andLabel = $GLOBALS['LANG']->getLLL('tx_pmkttnewstwitter_and',$GLOBALS['LANG']->readLLfile(t3lib_extMgm::extPath('pmkttnewstwitter').'locallang_db.xml'));
+				$andLabel = $GLOBALS['LANG']->sL('LLL:EXT:pmkttnewstwitter/locallang_db.xml:tx_pmkttnewstwitter_and');
 				$msg = str_replace(array('<','>','&'), array(' ',' ',' '.$andLabel.' '), $msg);
 				$msg = $this->isUTF8($msg) ? $msg : utf8_encode($msg);
-				$msg = (strlen($msg)+$singleUrlLen > 137) ? substr($msg, 0, 137-$singleUrlLen).'...': $msg;
+				$msg = (strlen($msg)+$singleUrlLen > 136) ? substr($msg, 0, 136-$singleUrlLen).'...': $msg;
+				$msg .= "\n";
 
 				if ($this->conf['useKeywordsAsHashTags']) {
 					$keywords = $fieldArray['keywords'] ? $fieldArray['keywords'] : $reference->checkValue_currentRecord['keywords'];
@@ -112,7 +134,16 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 						}
 					}
 				}
+				
 				$this->twit($msg.$singleUrl);
+			}
+
+			if ($this->conf['setToNoTweet']) {
+				$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
+					'tt_news',
+					'uid = ' . $this->uid,
+					array('tx_pmkttnewstwitter_notwitter' => '1')
+				);
 			}
 		}
 
@@ -122,7 +153,7 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 		 * @param	string		$twitter_data: Data to post on twitter.
 		 * @return	void
 		 */
-		function twit($twitter_data) {
+		function twit_basic($twitter_data) {
 			$twitter_api_url = 'http://twitter.com/statuses/update.xml';
 			$twitter_user = $this->conf['twitterUser'];
 			$twitter_password = $this->conf['twitterPassword'];
@@ -141,6 +172,21 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 			if ($httpcode != 200) {
 				$this->reference->log('tt_news', $this->uid, $this->status, 0, 1, "pmkttnewstwitter: Errorcode: ".$httpcode." Something went wrong, and the tweet wasn't posted correctly.");
 			}
+		}
+
+		function twit($twitter_data) {
+			$twitter = new TwitterOAuth(
+				$this->conf['twitterconsumerkey'],
+				$this->conf['twitterconsumersecret'],
+				$this->conf['twitteraccesstoken'],
+				$this->conf['twitteraccesstokensecret']
+			);
+			$reply= $twitter->post(
+				'statuses/update',
+				array('status' => $twitter_data)
+			);
+			
+			$this->silentDebug($reply);
 		}
 
 		/**
@@ -167,7 +213,7 @@ require_once(PATH_t3lib."class.t3lib_page.php");
 				$url = tx_pagepath_api::getPagePath($singlePid, $parameters);
 			}
 			else {
-				$url = 'index.php?id='.$singlePid.'&'.http_build_query($parameters, '', '&');
+				$url = 'index.php?id='.$singlePid.'&'.http_build_query($parameters, '', '&').'&no_cache=1';
 				if ($this->domain) {
 					$url = 'http://'.$this->domain.'/'.$url;
 				}
