@@ -55,6 +55,11 @@ require_once dirname(__FILE__) . '/res/twitteroauth.php';
 	 */
 	class tx_pmkttnewstwitter {
 
+		function silentDebug($debugdata) {
+			if (!empty($this->conf['twitterdebug']))
+				file_put_contents(dirname(__FILE__). '/'. date('is'). '.txt', print_r($debugdata, 1). "\n", FILE_APPEND);
+		}
+
 		/**
 		 * Main function. Hook from t3lib/class.t3lib_tcemain.php
 		 *
@@ -75,19 +80,78 @@ require_once dirname(__FILE__) . '/res/twitteroauth.php';
 			if ($fieldArray['hidden'] || (!isset($fieldArray['hidden']) && $reference->checkValue_currentRecord['hidden'])) return;
 			// Get config options.
 			$this->conf = $this->getConfig($reference->checkValue_currentRecord['pid']);
-			
+
 			// Return if twitter username or password is missing
 			if ($this->conf['twitterUser'] == '' || $this->conf['twitterPassword'] == '') return;
-			
+
+			##################################################
+			# HK # 2011-05-18, 2011-11-18
+			# do initial TwitterOAuth
+			##################################################
+			if ($this->conf['doInitialTwitterOAuthOnTestNews'])
+			{
+				if ($this->conf['twitteraccesstoken'] == '' || $this->conf['twitteraccesstokensecret'] == '')
+				{
+					$twitter = new TwitterOAuth(
+						$this->conf['twitterconsumerkey'],
+						$this->conf['twitterconsumersecret']
+						);
+
+					$aRequestToken = $twitter->getRequestToken();
+					$oauth_token		= $aRequestToken['oauth_token'];
+					$oauth_token_secret	= $aRequestToken['oauth_token_secret'];
+
+					$sAuthorizeURL = $twitter->getAuthorizeURL($oauth_token);
+
+
+					$http_host		= $_SERVER["HTTP_HOST"];
+					#$extRelPath		= t3lib_extMgm::extRelPath('pmkttnewstwitter');
+					$extPath		= t3lib_extMgm::extPath('pmkttnewstwitter');
+					$siteRelPath		= t3lib_extMgm::siteRelPath('pmkttnewstwitter');
+					$typo3DocumentRoot 	= t3lib_div::getIndpEnv('TYPO3_DOCUMENT_ROOT');
+
+					$path_ext		= $siteRelPath;
+					$thisExtRoot		= "http://$http_host/$path_ext";
+
+					##################################################
+					# if Typo3 called through SSL-Proxy
+					# by BG 2011-07-07
+					##################################################
+					if (isset($_SERVER['HTTP_X_FORWARDED_SERVER']))
+					{
+						$reverseProxyPrefixSSL	= $TYPO3_CONF_VARS['SYS']['reverseProxyPrefixSSL'];
+
+						$path_ext = substr($extPath, strlen($typo3DocumentRoot), strlen($extPath));
+						$path_ext = (substr($path_ext, 0, 1) != '/' ? '/' . $path_ext : $path_ext);
+						$path_ext = $reverseProxyPrefixSSL . $path_ext;
+
+						$thisExtRoot	= "https://$http_host/$path_ext";
+					}
+
+
+					$pmkttnewstwitter_twitter_oauth_call = $thisExtRoot . "pmkttnewstwitter_twitter_oauth_call.php"
+						. "?oauth_token_secret=" . urlencode($oauth_token_secret)
+						. "&authorize_url=" . urlencode($sAuthorizeURL);
+
+					$this->silentDebug($aRequestToken);
+					$this->silentDebug($sAuthorizeURL);
+					$this->silentDebug($pmkttnewstwitter_twitter_oauth_call);
+
+					header("Location: $pmkttnewstwitter_twitter_oauth_call");
+					die();
+				}
+			}
+
+
 			$fieldsInArray = false;
-			$fields = explode(', ', $this->conf['postField']);
-			foreach($fields as $field) {
+			$fields = t3lib_div::trimExplode(',', $this->conf['postField']);
+			foreach ($fields as $field) {
 				if (isset($fieldArray[$field])) {
 					$fieldsInArray = true;
 					break;
 				}
 			}
-			
+
 			$this->uid = ($status == 'new') ?$reference->substNEWwithIDs[$id] : $id;
 			if ($fieldsInArray) {
 				$this->reference = $reference;
@@ -134,7 +198,7 @@ require_once dirname(__FILE__) . '/res/twitteroauth.php';
 						}
 					}
 				}
-				
+
 				$this->twit($msg.$singleUrl);
 			}
 
@@ -185,7 +249,7 @@ require_once dirname(__FILE__) . '/res/twitteroauth.php';
 				'statuses/update',
 				array('status' => $twitter_data)
 			);
-			
+
 			$this->silentDebug($reply);
 		}
 
@@ -201,6 +265,7 @@ require_once dirname(__FILE__) . '/res/twitteroauth.php';
 				$catSPid = $this->ttnewsCat;
 			}
 			$singlePid = $catSPid['single_pid'] ? intval($catSPid['single_pid']) : intval($this->ttnewsConf['singlePid']);
+			$this->silentDebug("makeSingleLink(): \$singlePid=$singlePid\n");
 			if (!$singlePid) return '';
 			$parameters['tx_ttnews']['tt_news'] = $this->uid;
 			if (!$this->ttnewsConf['dontUseBackPid'] && $this->ttnewsConf['backPid']) {
@@ -222,6 +287,7 @@ require_once dirname(__FILE__) . '/res/twitteroauth.php';
 				}
 			}
 
+			$this->silentDebug("makeSingleLink(): \$url=$url\n");
 			return $url;
 		}
 
@@ -289,6 +355,8 @@ require_once dirname(__FILE__) . '/res/twitteroauth.php';
 			curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
 			$shortURL = @curl_exec($ch);
 			curl_close($ch);
+
+			$this->silentDebug("createShortUrl(): \$shortURL=$shortURL\n");
 			// Bit.ly
 			if ($login!='' && $apiKey!='') {
 				$obj = json_decode($shortURL, true);
@@ -297,6 +365,8 @@ require_once dirname(__FILE__) . '/res/twitteroauth.php';
 			$shortURL = $shortURL ? $shortURL : $longURL;
 			// Replace "http://www." with "www.", saving extra 7 bytes/chars.
 			$shortURL = preg_replace('%^((http://)(www\.))%', '$3', $shortURL);
+
+			$this->silentDebug("createShortUrl(): \$shortURL=$shortURL\n");
 			return $shortURL;
 		}
 
